@@ -10,26 +10,19 @@ import requests
 state = False
 
 # LambdaInsight layer ARNs, suppose we run soak test only in these regions
-lambdaInsightArnMap = {}
-lambdaInsightArnMap[
-    "us-east-1"
-] = "arn:aws:lambda:us-east-1:580247275435:layer:LambdaInsightsExtension:14"
-lambdaInsightArnMap[
-    "us-east-2"
-] = "arn:aws:lambda:us-east-2:580247275435:layer:LambdaInsightsExtension:14"
-lambdaInsightArnMap[
-    "us-west-1"
-] = "arn:aws:lambda:us-west-1:580247275435:layer:LambdaInsightsExtension:14"
-lambdaInsightArnMap[
-    "us-west-2"
-] = "arn:aws:lambda:us-west-2:580247275435:layer:LambdaInsightsExtension:14"
+lambdaInsightArnMap = {
+    "us-east-1": "arn:aws:lambda:us-east-1:580247275435:layer:LambdaInsightsExtension:14",
+    "us-east-2": "arn:aws:lambda:us-east-2:580247275435:layer:LambdaInsightsExtension:14",
+    "us-west-1": "arn:aws:lambda:us-west-1:580247275435:layer:LambdaInsightsExtension:14",
+    "us-west-2": "arn:aws:lambda:us-west-2:580247275435:layer:LambdaInsightsExtension:14",
+}
 
 
 def enableLambdaInsight(function_name):
     lambdaClient = boto3.client("lambda")
     lambdaInsightLayerArn = lambdaInsightArnMap[boto3.Session().region_name]
     response = lambdaClient.get_function_configuration(FunctionName=function_name)
-    print("Lambda function has layers: {}".format(response["Layers"]))
+    print(f'Lambda function has layers: {response["Layers"]}')
 
     arnList = []
     for item in response["Layers"]:
@@ -44,7 +37,7 @@ def enableLambdaInsight(function_name):
         FunctionName=function_name, Layers=arnList
     )
     response = lambdaClient.get_function_configuration(FunctionName=function_name)
-    print("Enable LambdaInsight {}".format(response["Layers"]))
+    print(f'Enable LambdaInsight {response["Layers"]}')
 
 
 def parse_args():
@@ -64,7 +57,7 @@ def parse_args():
     try:
         arguments, values = getopt.getopt(argument_list, short_options, long_options)
     except getopt.error as err:
-        print(str(err))
+        print(err)
         sys.exit(2)
 
     for current_argument, current_value in arguments:
@@ -166,7 +159,7 @@ def alarm_puller(function_name, cpu_threshold, memory_threshold):
     while True:
         for response in paginator.paginate(AlarmNames=[memory_alarm, cpu_alarm]):
             for alarm in response["MetricAlarms"]:
-                print("{} state {}".format(alarm["AlarmName"], alarm["StateValue"]))
+                print(f'{alarm["AlarmName"]} state {alarm["StateValue"]}')
                 if alarm["StateValue"] == "ALARM":
                     state = True
                     return
@@ -188,8 +181,8 @@ if __name__ == "__main__":
     enableLambdaInsight(function_name)
 
     # Set alarm name
-    memory_alarm = "otel_lambda_memory-" + function_name
-    cpu_alarm = "otel_lambda_cpu-" + function_name
+    memory_alarm = f"otel_lambda_memory-{function_name}"
+    cpu_alarm = f"otel_lambda_cpu-{function_name}"
 
     cloudwatch = boto3.client("cloudwatch")
 
